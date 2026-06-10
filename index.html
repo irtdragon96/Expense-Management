@@ -2,106 +2,117 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quản lý chi tiêu cá nhân</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Dashboard Pro</title>
 <style>
-body{font-family:Arial,sans-serif;background:#121212;color:#eee;max-width:900px;margin:auto;padding:20px}
-.card{background:#1e1e1e;padding:15px;border-radius:12px;margin-bottom:15px}
-input,select,button{padding:10px;border-radius:8px;border:1px solid #444;background:#2a2a2a;color:#fff}
-button{cursor:pointer}
+body{margin:0;background:#0f172a;color:#e2e8f0;font-family:Segoe UI,Arial}
+.container{max-width:1100px;margin:auto;padding:20px}
+h1{margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.card{background:#1e293b;border-radius:16px;padding:18px;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.value{font-size:28px;font-weight:bold;margin-top:10px}
+input,select,button{
+width:100%;padding:12px;margin-top:8px;border-radius:10px;
+border:1px solid #334155;background:#0f172a;color:white;box-sizing:border-box}
+button{background:#2563eb;border:none}
 table{width:100%;border-collapse:collapse}
-td,th{padding:8px;border-bottom:1px solid #333}
-.summary{font-size:1.1em;font-weight:bold}
+th,td{padding:12px;border-bottom:1px solid #334155;text-align:left}
+.badge-in{color:#4ade80}
+.badge-out{color:#f87171}
 </style>
 </head>
 <body>
-<h2>💰 Quản lý tài chính cá nhân</h2>
+<div class="container">
+<h1>💰 Finance Dashboard Pro</h1>
 
-<div class="card">
-<label>Số dư ban đầu: </label>
-<input type="number" id="initialBalance" value="0">
-<button onclick="saveInitial()">Lưu</button>
+<div class="grid">
+<div class="card"><div>Số dư hiện tại</div><div class="value" id="balance">0₫</div></div>
+<div class="card"><div>Tổng thu</div><div class="value" id="income">0₫</div></div>
+<div class="card"><div>Tổng chi</div><div class="value" id="expense">0₫</div></div>
+<div class="card"><div>Số giao dịch</div><div class="value" id="count">0</div></div>
 </div>
 
-<div class="card">
+<div class="card" style="margin-top:15px">
+<h3>Thêm giao dịch</h3>
+<input id="start" type="number" placeholder="Số dư ban đầu (nhập 1 lần)">
 <select id="type">
 <option value="income">Thu nhập</option>
 <option value="expense">Chi tiêu</option>
 </select>
-<input type="text" id="desc" placeholder="Nội dung">
-<input type="number" id="amount" placeholder="Số tiền">
-<button onclick="addTx()">Thêm</button>
+<input id="cat" placeholder="Danh mục (Ăn uống, Lương, Game...)">
+<input id="note" placeholder="Nội dung">
+<input id="amount" type="number" placeholder="Số tiền">
+<button onclick="add()">Thêm giao dịch</button>
 </div>
 
-<div class="card summary">
-<div>Tổng thu: <span id="income">0</span> đ</div>
-<div>Tổng chi: <span id="expense">0</span> đ</div>
-<div>Số dư hiện tại: <span id="balance">0</span> đ</div>
-</div>
-
-<div class="card">
+<div class="card" style="margin-top:15px">
+<h3>Lịch sử giao dịch</h3>
 <table>
-<thead><tr><th>Ngày</th><th>Loại</th><th>Nội dung</th><th>Số tiền</th><th></th></tr></thead>
-<tbody id="txTable"></tbody>
+<thead>
+<tr><th>Ngày</th><th>Loại</th><th>Danh mục</th><th>Nội dung</th><th>Số tiền</th><th></th></tr>
+</thead>
+<tbody id="tb"></tbody>
 </table>
+</div>
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("financeData") || "[]");
-let initial = Number(localStorage.getItem("initialBalance") || 0);
-
-document.getElementById("initialBalance").value = initial;
+let tx=JSON.parse(localStorage.getItem("tx")||"[]");
+let start=Number(localStorage.getItem("start")||0);
+document.getElementById("start").value=start;
 
 function save(){
- localStorage.setItem("financeData", JSON.stringify(data));
+ localStorage.setItem("tx",JSON.stringify(tx));
+ localStorage.setItem("start",document.getElementById("start").value||0);
 }
 
-function saveInitial(){
- initial = Number(document.getElementById("initialBalance").value || 0);
- localStorage.setItem("initialBalance", initial);
- render();
-}
-
-function addTx(){
- const type=document.getElementById("type").value;
- const desc=document.getElementById("desc").value;
- const amount=Number(document.getElementById("amount").value);
- if(!desc || !amount) return alert("Nhập đầy đủ thông tin");
- data.unshift({
-   date:new Date().toLocaleString("vi-VN"),
-   type,desc,amount
- });
+function add(){
+ let t={
+ date:new Date().toLocaleString("vi-VN"),
+ type:type.value,
+ cat:cat.value,
+ note:note.value,
+ amount:Number(amount.value)
+ };
+ if(!t.amount)return;
+ tx.unshift(t);
  save();
  render();
- document.getElementById("desc").value="";
- document.getElementById("amount").value="";
+ note.value="";amount.value="";cat.value="";
 }
 
 function del(i){
- data.splice(i,1);
+ tx.splice(i,1);
  save();
  render();
 }
 
 function render(){
- let income=0, expense=0;
+ start=Number(document.getElementById("start").value||0);
+ let income=0,expense=0;
  let html="";
- data.forEach((t,i)=>{
-   if(t.type==="income") income+=t.amount;
-   else expense+=t.amount;
-   html += `<tr>
-   <td>${t.date}</td>
-   <td>${t.type==="income"?"Thu":"Chi"}</td>
-   <td>${t.desc}</td>
-   <td>${t.amount.toLocaleString('vi-VN')}</td>
-   <td><button onclick="del(${i})">Xóa</button></td>
-   </tr>`;
+ tx.forEach((x,i)=>{
+  if(x.type==="income") income+=x.amount; else expense+=x.amount;
+  html+=`<tr>
+  <td>${x.date}</td>
+  <td class="${x.type==='income'?'badge-in':'badge-out'}">${x.type==='income'?'Thu':'Chi'}</td>
+  <td>${x.cat||''}</td>
+  <td>${x.note||''}</td>
+  <td>${x.amount.toLocaleString('vi-VN')}₫</td>
+  <td><button onclick="del(${i})">Xóa</button></td>
+  </tr>`;
  });
- document.getElementById("txTable").innerHTML=html;
- document.getElementById("income").innerText=income.toLocaleString('vi-VN');
- document.getElementById("expense").innerText=expense.toLocaleString('vi-VN');
- document.getElementById("balance").innerText=(initial+income-expense).toLocaleString('vi-VN');
+ tb.innerHTML=html;
+ incomeEl=document.getElementById("income");
+ expenseEl=document.getElementById("expense");
+ balanceEl=document.getElementById("balance");
+ countEl=document.getElementById("count");
+ incomeEl.innerText=income.toLocaleString('vi-VN')+'₫';
+ expenseEl.innerText=expense.toLocaleString('vi-VN')+'₫';
+ balanceEl.innerText=(start+income-expense).toLocaleString('vi-VN')+'₫';
+ countEl.innerText=tx.length;
 }
+document.getElementById("start").addEventListener("input",()=>{save();render();});
 render();
 </script>
 </body>
