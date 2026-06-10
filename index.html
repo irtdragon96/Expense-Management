@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quản lý chi tiêu cá nhân</title>
+<style>
+body{font-family:Arial,sans-serif;background:#121212;color:#eee;max-width:900px;margin:auto;padding:20px}
+.card{background:#1e1e1e;padding:15px;border-radius:12px;margin-bottom:15px}
+input,select,button{padding:10px;border-radius:8px;border:1px solid #444;background:#2a2a2a;color:#fff}
+button{cursor:pointer}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid #333}
+.summary{font-size:1.1em;font-weight:bold}
+</style>
+</head>
+<body>
+<h2>💰 Quản lý tài chính cá nhân</h2>
+
+<div class="card">
+<label>Số dư ban đầu: </label>
+<input type="number" id="initialBalance" value="0">
+<button onclick="saveInitial()">Lưu</button>
+</div>
+
+<div class="card">
+<select id="type">
+<option value="income">Thu nhập</option>
+<option value="expense">Chi tiêu</option>
+</select>
+<input type="text" id="desc" placeholder="Nội dung">
+<input type="number" id="amount" placeholder="Số tiền">
+<button onclick="addTx()">Thêm</button>
+</div>
+
+<div class="card summary">
+<div>Tổng thu: <span id="income">0</span> đ</div>
+<div>Tổng chi: <span id="expense">0</span> đ</div>
+<div>Số dư hiện tại: <span id="balance">0</span> đ</div>
+</div>
+
+<div class="card">
+<table>
+<thead><tr><th>Ngày</th><th>Loại</th><th>Nội dung</th><th>Số tiền</th><th></th></tr></thead>
+<tbody id="txTable"></tbody>
+</table>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("financeData") || "[]");
+let initial = Number(localStorage.getItem("initialBalance") || 0);
+
+document.getElementById("initialBalance").value = initial;
+
+function save(){
+ localStorage.setItem("financeData", JSON.stringify(data));
+}
+
+function saveInitial(){
+ initial = Number(document.getElementById("initialBalance").value || 0);
+ localStorage.setItem("initialBalance", initial);
+ render();
+}
+
+function addTx(){
+ const type=document.getElementById("type").value;
+ const desc=document.getElementById("desc").value;
+ const amount=Number(document.getElementById("amount").value);
+ if(!desc || !amount) return alert("Nhập đầy đủ thông tin");
+ data.unshift({
+   date:new Date().toLocaleString("vi-VN"),
+   type,desc,amount
+ });
+ save();
+ render();
+ document.getElementById("desc").value="";
+ document.getElementById("amount").value="";
+}
+
+function del(i){
+ data.splice(i,1);
+ save();
+ render();
+}
+
+function render(){
+ let income=0, expense=0;
+ let html="";
+ data.forEach((t,i)=>{
+   if(t.type==="income") income+=t.amount;
+   else expense+=t.amount;
+   html += `<tr>
+   <td>${t.date}</td>
+   <td>${t.type==="income"?"Thu":"Chi"}</td>
+   <td>${t.desc}</td>
+   <td>${t.amount.toLocaleString('vi-VN')}</td>
+   <td><button onclick="del(${i})">Xóa</button></td>
+   </tr>`;
+ });
+ document.getElementById("txTable").innerHTML=html;
+ document.getElementById("income").innerText=income.toLocaleString('vi-VN');
+ document.getElementById("expense").innerText=expense.toLocaleString('vi-VN');
+ document.getElementById("balance").innerText=(initial+income-expense).toLocaleString('vi-VN');
+}
+render();
+</script>
+</body>
+</html>
